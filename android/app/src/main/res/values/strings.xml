@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">flutter login trial</string>
+  <string name="facebook_app_id">182834233775150</string>
+  <string name="fb_login_protocol_scheme">fb182834233775150</string>
+</resources>
