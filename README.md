@@ -17,3 +17,5 @@ samples, guidance on mobile development, and a full API reference.
 
 Login with google :
 Reference : https://www.youtube.com/watch?v=E5WgU6ERZzA
+
+Login with Twitter and Facebook added

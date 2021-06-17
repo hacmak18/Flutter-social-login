@@ -6,6 +6,8 @@ import 'package:login/ui/widgets/custom_shape.dart';
 import 'package:login/ui/widgets/customappbar.dart';
 import 'package:login/ui/widgets/responsive_ui.dart';
 import 'package:login/ui/widgets/textformfield.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:twitter_login/twitter_login.dart';
 
 class SignUpScreen extends StatefulWidget {
   @override
@@ -19,7 +21,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late double _pixelRatio;
   late bool _large;
   late bool _medium;
-
+  var userData = {};
   @override
   Widget build(BuildContext context) {
     _height = MediaQuery.of(context).size.height;
@@ -277,7 +279,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           GestureDetector(
-            onTap: () => signIn(),
+            onTap: () => signInGoogle(),
             child: CircleAvatar(
               radius: 15,
               backgroundImage: AssetImage("assets/images/googlelogo.png"),
@@ -286,16 +288,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
           SizedBox(
             width: 20,
           ),
-          CircleAvatar(
-            radius: 15,
-            backgroundImage: AssetImage("assets/images/fblogo.jpg"),
+          GestureDetector(
+            onTap: () => signInFb(),
+            child: CircleAvatar(
+              radius: 15,
+              backgroundImage: AssetImage("assets/images/fblogo.jpg"),
+            ),
           ),
           SizedBox(
             width: 20,
           ),
-          CircleAvatar(
-            radius: 15,
-            backgroundImage: AssetImage("assets/images/twitterlogo.jpg"),
+          GestureDetector(
+            onTap: () => signInTwitter(),
+            child: CircleAvatar(
+              radius: 15,
+              backgroundImage: AssetImage("assets/images/twitterlogo.jpg"),
+            ),
           ),
         ],
       ),
@@ -333,15 +341,92 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Future signIn() async {
+  Future signInGoogle() async {
     final user = await GoogleSignInApi.login();
     print(user);
     if (user == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Sign in failed')));
     } else {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoggedInPage(user: user)));
+      userData = {
+        "name": user.displayName,
+        "email": user.email,
+        "img": user.photoUrl,
+        "social": "Google",
+      };
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => LoggedInPage(user: userData)));
+    }
+  }
+
+  Future signInFb() async {
+    final user = await FacebookAuth.instance
+        .login(permissions: ["public_profile", "email"]);
+    if (user.status == LoginStatus.success) {
+      final userInfo = await FacebookAuth.i.getUserData(
+        fields: "name,email,picture.width(200)",
+      );
+      userData = {
+        "name": userInfo["name"],
+        "email": userInfo["email"],
+        "img": userInfo["picture"]["data"]["url"],
+        "social": "FB",
+      };
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => LoggedInPage(user: userData)));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Sign in failed')));
+    }
+  }
+
+  Future signInTwitter() async {
+    final twitterLogin = TwitterLogin(
+      /// Consumer API keys
+      apiKey: 'DxaL2spR60wAZkShgehtZKtZ8',
+
+      /// Consumer API Secret keys
+      apiSecretKey: 'uDIsWoTzCMoLF7DgQq5HOVcewMyokjCWdxV16RIhJaten0K2h7',
+
+      /// Registered Callback URLs in TwitterApp
+      /// Android is a deeplink
+      /// iOS is a URLScheme
+      redirectURI: 'example://',
+    );
+    final authResult = await twitterLogin.login();
+    switch (authResult.status) {
+      case TwitterLoginStatus.loggedIn:
+        // success
+        var userInfo = authResult.user;
+        userData = {
+          "name": userInfo!.name,
+          "email": userInfo.email,
+          "img": userInfo.thumbnailImage,
+          "social": "Twitter",
+        };
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => LoggedInPage(user: userData),
+          ),
+        );
+        break;
+      case TwitterLoginStatus.cancelledByUser:
+        // cancel
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed'),
+          ),
+        );
+        break;
+      case TwitterLoginStatus.error:
+      case null:
+        // error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed'),
+          ),
+        );
+        break;
     }
   }
 }
